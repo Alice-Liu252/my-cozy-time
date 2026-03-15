@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#ff8fab">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="我的小窩時光">
+  <link rel="manifest" href="manifest.json">
+  <title>我的小窩時光</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Microsoft JhengHei','PingFang TC','微軟正黑體',sans-serif;
+      background:linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%);
+      min-height:100vh;display:flex;justify-content:center;align-items:center;
+    }
+    #game{
+      width:390px;height:844px;
+      background:#fff9f7;border-radius:40px;
+      box-shadow:0 25px 80px rgba(0,0,0,.25);
+      overflow:hidden;position:relative;
+    }
+    /* ── Screen ── */
+    .screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;}
+    .screen.active{display:flex;}
+
+    /* ── Buttons ── */
+    .btn{
+      border:none;border-radius:50px;
+      font-size:16px;font-family:inherit;cursor:pointer;
+      font-weight:bold;transition:transform .15s,box-shadow .15s;
+      padding:14px 36px;
+    }
+    .btn:active{transform:scale(.97);}
+    .btn-pink{
+      background:linear-gradient(135deg,#ff8fab,#ff6b9d);
+      color:white;box-shadow:0 8px 22px rgba(255,107,157,.4);
+    }
+    .btn-pink:hover{box-shadow:0 12px 28px rgba(255,107,157,.5);}
+    .btn-blue{
+      background:linear-gradient(135deg,#a8d8ea,#7ec8e3);
+      color:white;box-shadow:0 8px 22px rgba(126,200,227,.4);
+    }
+    .btn-ghost{
+      background:white;color:#ff8fab;
+      border:2px solid #ff8fab;
+    }
+    .btn-ghost:hover{background:#fff0f5;}
+
+    /* ── Header ── */
+    .s-header{
+      padding:46px 20px 16px;text-align:center;color:white;
+    }
+    .s-header h2{font-size:20px;}
+    .s-header p{font-size:12px;opacity:.85;margin-top:4px;}
+    .s-header.pink{background:linear-gradient(135deg,#ff8fab,#ff6b9d);}
+    .s-header.rose{background:linear-gradient(135deg,#ff9a9e,#fecfef);}
+    .s-header.blue{background:linear-gradient(135deg,#a8d8ea,#7ec8e3);}
+    .s-header.purple{background:linear-gradient(135deg,#c084fc,#f472b6);}
+    .s-header.shop{background:linear-gradient(135deg,#f093fb,#f5576c);}
+
+    /* ── Scrollable content ── */
+    .s-body{flex:1;overflow-y:auto;padding:16px;}
+    .s-body::-webkit-scrollbar{width:4px;}
+    .s-body::-webkit-scrollbar-thumb{background:#ffc0cb;border-radius:2px;}
+    .s-footer{padding:14px 16px 26px;background:white;border-top:1px solid #ffe0e6;}
+
+    /* ── Form ── */
+    .f-label{font-size:13px;font-weight:bold;color:#5c4033;margin-bottom:8px;display:block;}
+    .f-input{
+      width:100%;padding:12px 15px;
+      border:2px solid #ffe0e6;border-radius:18px;
+      font-size:15px;font-family:inherit;color:#5c4033;
+      background:white;outline:none;transition:border-color .2s;
+    }
+    .f-input:focus{border-color:#ff8fab;}
+    .f-group{margin-bottom:16px;}
+
+    /* ── Option cards ── */
+    .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .opt-card{
+      background:white;border:2.5px solid #ffe0e6;
+      border-radius:14px;padding:10px 6px;
+      text-align:center;cursor:pointer;transition:all .2s;
+    }
+    .opt-card:hover{border-color:#ff8fab;}
+    .opt-card.sel{border-color:#ff8fab;background:#fff0f5;}
+    .opt-card .oi{font-size:26px;display:block;margin-bottom:3px;}
+    .opt-card .ol{font-size:11px;color:#5c4033;}
+
+    /* ── Color dot pickers ── */
+    .color-row{display:flex;gap:10px;flex-wrap:wrap;}
+    .cdot{
+      width:34px;height:34px;border-radius:50%;
+      border:3px solid transparent;cursor:pointer;
+      transition:transform .2s,border-color .2s;
+      box-shadow:0 2px 6px rgba(0,0,0,.15);
+    }
+    .cdot:hover{transform:scale(1.15);}
+    .cdot.sel{border-color:#ff6b9d;transform:scale(1.18);}
+
+    /* ── Character preview in creator ── */
+    #charPrev{
+      width:100px;height:auto;
+      filter:drop-shadow(0 6px 12px rgba(255,107,157,.3));
+      display:block;margin:0 auto;
+    }
+
+    /* ══════════════════════════════════════
+       TITLE SCREEN
+    ══════════════════════════════════════ */
+    #s-title{
+      background:linear-gradient(160deg,#667eea,#764ba2);
+      justify-content:center;align-items:center;text-align:center;color:white;
+      padding:40px;position:relative;overflow:hidden;
+    }
+    .starbg{position:absolute;inset:0;pointer-events:none;}
+    .star{
+      position:absolute;width:4px;height:4px;
+      background:white;border-radius:50%;
+      animation:twinkle 2s ease-in-out infinite;
+    }
+    .t-deco{font-size:75px;animation:float 3s ease-in-out infinite;z-index:1;}
+    .t-main{font-size:28px;font-weight:bold;margin-bottom:12px;z-index:1;
+      text-shadow:0 2px 10px rgba(0,0,0,.3);}
+    .t-sub{font-size:13px;line-height:2.1;opacity:.9;margin-bottom:36px;z-index:1;}
+    .t-sub .hi{color:#ffb3c6;font-weight:bold;}
+    #btnContinue{display:none;margin-top:12px;}
+
+    /* ══════════════════════════════════════
+       STORY SCREEN
+    ══════════════════════════════════════ */
+    .story-panel{
+      display:none;flex-direction:column;
+      justify-content:center;align-items:center;
+      padding:36px 28px;text-align:center;
+      width:100%;height:100%;
+    }
+    .story-panel.active{display:flex;}
+    .sp-illus{font-size:85px;margin-bottom:24px;animation:float 3s ease-in-out infinite;}
+    .sp-text{color:white;font-size:15px;line-height:2.2;margin-bottom:30px;}
+    .sp-text .hi{color:#ffb3c6;font-weight:bold;}
+    .sp-dots{display:flex;gap:8px;margin-bottom:26px;}
+    .sp-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s;}
+    .sp-dot.active{background:#ff8fab;width:22px;border-radius:4px;}
+
+    /* ══════════════════════════════════════
+       HOME SCREEN
+    ══════════════════════════════════════ */
+    .topbar{
+      background:white;padding:44px 16px 12px;
+      display:flex;justify-content:space-between;align-items:center;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+    }
+    .p-info{display:flex;align-items:center;gap:9px;}
+    .p-avatar{
+      width:38px;height:38px;border-radius:50%;
+      background:#ffe0e6;overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .p-avatar svg{width:32px;height:auto;}
+    .p-name{font-size:13px;font-weight:bold;color:#5c4033;}
+    .p-sub{font-size:10px;color:#ccc;}
+    .coins{
+      background:#fff8e1;border:2px solid #ffd54f;
+      border-radius:18px;padding:4px 11px;
+      font-size:13px;color:#f57c00;font-weight:bold;
+    }
+
+    /* Room */
+    .room-wrap{flex:1;position:relative;overflow:hidden;}
+    .room-bg{width:100%;height:100%;position:relative;}
+    .r-wall{
+      position:absolute;top:0;left:0;right:0;height:55%;
+      background:linear-gradient(180deg,#fce4ec 0%,#fff3e0 100%);
+      background-image:
+        linear-gradient(180deg,#fce4ec 0%,#fff3e0 100%),
+        repeating-linear-gradient(
+          45deg,transparent,transparent 22px,
+          rgba(255,143,171,.04) 22px,rgba(255,143,171,.04) 24px
+        );
+    }
+    .r-floor{
+      position:absolute;bottom:0;left:0;right:0;height:45%;
+      background:repeating-linear-gradient(
+        90deg,
+        #e8d5a0 0px,#e8d5a0 58px,
+        #d4c090 58px,#d4c090 60px
+      );
+    }
+    .r-line{
+      position:absolute;top:55%;left:0;right:0;
+      height:3px;background:rgba(0,0,0,.07);
+    }
+    /* window */
+    .r-window{
+      position:absolute;top:16px;left:50%;transform:translateX(-50%);
+      font-size:46px;
+    }
+    /* furniture */
+    .furn{
+      position:absolute;text-align:center;
+      transition:transform .15s;cursor:default;
+    }
+    .furn:hover{transform:scale(1.08);}
+    .furn .fi{display:block;font-size:38px;}
+    .furn .fl{font-size:10px;color:#bbb;}
+    /* Characters in room */
+    .r-char{
+      position:absolute;
+      text-align:center;
+    }
+    .r-char svg{
+      display:block;
+      filter:drop-shadow(2px 5px 6px rgba(0,0,0,.18));
+    }
+    .r-char.player svg{animation:charIdle 2s ease-in-out infinite;}
+    .r-char.partner svg{animation:charIdle 2.2s ease-in-out infinite;animation-delay:.6s;cursor:pointer;}
+    .r-char.pet svg{animation:petBounce 1.4s ease-in-out infinite;}
+    .r-char .ctip{font-size:10px;color:#ff8fab;text-align:center;margin-top:2px;}
+    /* Speech bubble */
+    #bubble{
+      position:absolute;bottom:54%;right:6%;
+      background:white;border:2px solid #ff8fab;
+      border-radius:16px;padding:8px 12px;
+      font-size:11px;color:#5c4033;
+      max-width:148px;text-align:center;
+      animation:fDDown .3s ease;z-index:20;
+      display:none;
+      box-shadow:0 4px 12px rgba(255,143,171,.2);
+    }
+    #bubble::after{
+      content:'';position:absolute;
+      bottom:-9px;left:50%;transform:translateX(-50%);
+      border:5px solid transparent;border-top-color:#ff8fab;
+    }
+    /* Heart pop */
+    .heart{
+      position:absolute;pointer-events:none;font-size:20px;
+      animation:heartPop .8s ease forwards;z-index:30;
+    }
+    /* Bottom nav */
+    .bnav{
+      background:white;display:grid;grid-template-columns:repeat(4,1fr);
+      padding:7px 0 26px;
+      box-shadow:0 -2px 15px rgba(0,0,0,.07);
+    }
+    .bni{
+      display:flex;flex-direction:column;align-items:center;gap:3px;
+      cursor:pointer;padding:6px;border-radius:12px;transition:all .2s;
+    }
+    .bni.active{background:#fff0f5;}
+    .bni .ni{font-size:22px;}
+    .bni .nl{font-size:10px;color:#bbb;}
+    .bni.active .nl{color:#ff8fab;font-weight:bold;}
+
+    /* ══════════════════════════════════════
+       SHOP
+    ══════════════════════════════════════ */
+    .shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;padding:14px;}
+    .sh-item{
+      background:white;border-radius:18px;padding:13px;
+      text-align:center;cursor:pointer;transition:transform .15s,border-color .15s;
+      border:2px solid transparent;
+      box-shadow:0 3px 12px rgba(0,0,0,.06);
+    }
+    .sh-item:hover{transform:translateY(-3px);border-color:#ff8fab;}
+    .sh-item.owned{border-color:#a8d8ea;background:#f0faff;cursor:default;}
+    .sh-item .si{font-size:42px;margin-bottom:6px;}
+    .sh-item .sn{font-size:12px;font-weight:bold;color:#5c4033;margin-bottom:3px;}
+    .sh-item .sp{font-size:12px;color:#f57c00;}
+
+    /* ══════════════════════════════════════
+       WARDROBE
+    ══════════════════════════════════════ */
+    .wd-prev{
+      text-align:center;padding:20px;
+      background:white;margin:14px;
+      border-radius:22px;box-shadow:0 4px 18px rgba(0,0,0,.08);
+    }
+    #wdAvatar{width:80px;height:auto;display:block;margin:0 auto 8px;}
+    .of-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 14px;}
+    .of-item{
+      background:white;border:2px solid #ffe0e6;
+      border-radius:14px;padding:12px 6px;
+      text-align:center;cursor:pointer;transition:all .2s;
+    }
+    .of-item:hover{border-color:#c084fc;}
+    .of-item.sel{border-color:#c084fc;background:#fdf4ff;}
+    .of-item .oi{font-size:28px;display:block;margin-bottom:3px;}
+    .of-item .ol{font-size:11px;color:#5c4033;}
+
+    /* ══════════════════════════════════════
+       PET INTERACT
+    ══════════════════════════════════════ */
+    .pet-body{
+      flex:1;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;padding:18px;
+    }
+    #petBig{width:100px;height:auto;display:block;animation:petBounce 1.4s ease-in-out infinite;margin-bottom:12px;}
+    .pet-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+    .pa-btn{
+      border:none;border-radius:16px;padding:12px;
+      font-size:13px;font-family:inherit;
+      cursor:pointer;color:white;font-weight:bold;
+      transition:transform .15s;
+    }
+    .pa-btn:hover{transform:scale(1.04);}
+
+    /* ══════════════════════════════════════
+       SAVE INDICATOR
+    ══════════════════════════════════════ */
+    #saveInd{
+      position:absolute;top:48px;left:50%;transform:translateX(-50%);
+      background:rgba(0,0,0,.55);color:white;
+      padding:5px 14px;border-radius:20px;
+      font-size:11px;opacity:0;transition:opacity .3s;
+      pointer-events:none;z-index:50;
+    }
+    #saveInd.show{opacity:1;}
+
+    /* ══════════════════════════════════════
+       INSTALL BANNER
+    ══════════════════════════════════════ */
+    #installBanner{
+      position:absolute;bottom:0;left:0;right:0;
+      background:linear-gradient(135deg,#ff8fab,#c084fc);
+      color:white;padding:14px 18px;
+      display:none;align-items:center;justify-content:space-between;
+      z-index:100;border-radius:0 0 40px 40px;
+    }
+    #installBanner p{font-size:13px;}
+    #installBanner button{
+      background:white;color:#ff6b9d;
+      border:none;border-radius:20px;padding:7px 16px;
+      font-size:12px;font-family:inherit;cursor:pointer;font-weight:bold;
+    }
+
+    /* ══════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════ */
+    @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+    @keyframes charIdle{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-4px) rotate(1deg);}}
+    @keyframes petBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+    @keyframes twinkle{0%,100%{opacity:.3;transform:scale(1);}50%{opacity:1;transform:scale(1.5);}}
+    @keyframes fDDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes heartPop{0%{transform:scale(0) translateY(0);opacity:1;}80%{transform:scale(1.3) translateY(-20px);opacity:.8;}100%{transform:scale(0) translateY(-30px);opacity:0;}}
+    @keyframes saveFlash{0%,100%{opacity:0;}50%{opacity:1;}}
+    @keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+    /* info box */
+    .info-box{
+      background:#fff5f7;border-radius:16px;padding:14px;
+      font-size:12px;color:#999;text-align:center;line-height:2;margin-top:8px;
+    }
+
+    /* Toast */
+    #toast{
+      position:absolute;bottom:88px;left:50%;transform:translateX(-50%);
+      background:rgba(0,0,0,.62);color:white;
+      padding:10px 20px;border-radius:28px;font-size:12px;
+      opacity:0;pointer-events:none;transition:opacity .3s;
+      white-space:nowrap;z-index:90;
+    }
+    #toast.show{opacity:1;}
+  </style>
+</head>
+<body>
+<div id="game">
+
+  <!-- ══════════════════════════════════════════════
+       TITLE
+  ══════════════════════════════════════════════ -->
+  <div id="s-title" class="screen active">
+    <div class="starbg" id="starsContainer"></div>
+    <div style="z-index:1;display:flex;flex-direction:column;align-items:center;">
+      <div class="t-deco">🏠</div>
+      <div class="t-main">我的小窩時光</div>
+      <div class="t-sub">
+        開始一場屬於你的口袋冒險<br>
+        體驗生活、愛情與可愛家居<br>
+        <span class="hi">每一個細節，都是你的故事</span>
+      </div>
+      <button class="btn btn-pink" onclick="startNew()">✨ 開始新遊戲</button>
+      <button class="btn btn-ghost" id="btnContinue" style="margin-top:12px;" onclick="loadGame()">▶ 繼續遊戲</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       CHARACTER CREATOR
+  ══════════════════════════════════════════════ -->
+  <div id="s-char" class="screen">
+    <div class="s-header pink">
+      <h2>✨ 創建你的角色</h2>
+      <p>打造專屬於你的可愛形象</p>
+    </div>
+    <div class="s-body">
+      <!-- Live preview -->
+      <div style="text-align:center;padding:12px 0 6px;">
+        <svg id="charPrev" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">✏️ 你的名字</label>
+        <input type="text" class="f-input" id="charName" placeholder="輸入你的名字…" maxlength="10">
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">🎨 膚色</label>
+        <div class="color-row">
+          <div class="cdot sel" style="background:#F5C5A3;" onclick="setSkin(0,this)" title="白皙"></div>
+          <div class="cdot"     style="background:#E8A87C;" onclick="setSkin(1,this)" title="小麥"></div>
+          <div class="cdot"     style="background:#C68250;" onclick="setSkin(2,this)" title="健康"></div>
+        </div>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">💇 髮型</label>
+        <div class="opt-grid">
+          <div class="opt-card sel" onclick="setHair(0,this)">
+            <span class="oi">🪮</span><span class="ol">短直髮</span>
+          </div>
+          <div class="opt-card" onclick="setHair(1,this)">
+            <span class="oi">💁</span><span class="ol">長捲髮</span>
+          </div>
+          <div class="opt-card" onclick="setHair(2,this)">
+            <span class="oi">💆</span><span class="ol">丸子頭</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">🎀 髮色</label>
+        <div class="color-row">
+          <div class="cdot sel" style="background:#1C1410;" onclick="setHairColor(0,this)" title="黑色"></div>
+          <div class="cdot"     style="background:#6B3D1A;" onclick="setHairColor(1,this)" title="深棕"></div>
+          <div class="cdot"     style="background:#C8963C;" onclick="setHairColor(2,this)" title="金色"></div>
+          <div class="cdot"     style="background:#E8668A;" onclick="setHairColor(3,this)" title="粉色"></div>
+          <div class="cdot"     style="background:#7C5CBF;" onclick="setHairColor(4,this)" title="紫色"></div>
+        </div>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">👗 初始服裝</label>
+        <div class="opt-grid">
+          <div class="opt-card sel" onclick="setOutfit(0,this)">
+            <span class="oi">👕</span><span class="ol">休閒T恤</span>
+          </div>
+          <div class="opt-card" onclick="setOutfit(1,this)">
+            <span class="oi">👗</span><span class="ol">可愛洋裝</span>
+          </div>
+          <div class="opt-card" onclick="setOutfit(2,this)">
+            <span class="oi">🩱</span><span class="ol">舒適睡衣</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="s-footer">
+      <button class="btn btn-pink" style="width:100%;" onclick="submitChar()">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PARTNER
+  ══════════════════════════════════════════════ -->
+  <div id="s-partner" class="screen">
+    <div class="s-header rose">
+      <h2>💕 選擇你的伴侶</h2>
+      <p>與心中最特別的人同住</p>
+    </div>
+    <div class="s-body">
+      <div style="text-align:center;padding:8px 0 14px;font-size:13px;color:#aaa;line-height:2;">
+        新的篇章、新的家<br>選擇與你一起生活的伴侶吧！
+      </div>
+
+      <!-- Partner preview -->
+      <div style="text-align:center;padding:4px 0 12px;">
+        <svg id="partnerPrev" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg" style="width:80px;height:auto;display:inline-block;filter:drop-shadow(2px 5px 8px rgba(255,107,157,.25));"></svg>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">💌 伴侶名字</label>
+        <input type="text" class="f-input" id="partnerName" placeholder="給他/她起個名字…" maxlength="10">
+      </div>
+      <div class="f-group">
+        <label class="f-label">👤 伴侶類型</label>
+        <div class="opt-grid">
+          <div class="opt-card sel" onclick="setPartner(0,this)">
+            <span class="oi">🌸</span><span class="ol">溫柔型</span>
+          </div>
+          <div class="opt-card" onclick="setPartner(1,this)">
+            <span class="oi">⚡</span><span class="ol">活潑型</span>
+          </div>
+          <div class="opt-card" onclick="setPartner(2,this)">
+            <span class="oi">🌙</span><span class="ol">成熟型</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-box">💡 你們將一起打造夢想中的家<br>分享日常、陪伴彼此、創造回憶</div>
+    </div>
+    <div class="s-footer">
+      <button class="btn btn-pink" style="width:100%;" onclick="submitPartner()">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PET
+  ══════════════════════════════════════════════ -->
+  <div id="s-pet" class="screen">
+    <div class="s-header blue">
+      <h2>🐾 選擇你的寵物</h2>
+      <p>愛貓人還是愛狗人？由你來選擇！</p>
+    </div>
+    <div class="s-body">
+      <!-- Pet preview -->
+      <div style="text-align:center;padding:10px 0 14px;">
+        <svg id="petPrev" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" style="width:90px;height:auto;display:inline-block;animation:petBounce 1.4s ease-in-out infinite;filter:drop-shadow(2px 4px 6px rgba(0,0,0,.15));"></svg>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">🐾 種類</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="opt-card sel" id="petTypeCat" onclick="setPetType('cat',this)" style="padding:16px 8px;">
+            <span class="oi" style="font-size:32px;">🐱</span>
+            <span class="ol" style="font-size:13px;font-weight:bold;">貓咪</span>
+          </div>
+          <div class="opt-card" id="petTypeDog" onclick="setPetType('dog',this)" style="padding:16px 8px;">
+            <span class="oi" style="font-size:32px;">🐶</span>
+            <span class="ol" style="font-size:13px;font-weight:bold;">狗狗</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">🎨 毛色</label>
+        <div class="color-row" id="petColorRow">
+          <!-- injected by JS based on type -->
+        </div>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">🏷️ 寵物名字</label>
+        <input type="text" class="f-input" id="petName" placeholder="幫你的寵物起個可愛的名字…" maxlength="10">
+      </div>
+      <div class="info-box" style="background:#f0faff;color:#5a95b0;">
+        🐾 你的毛茸茸夥伴會在家裡陪似你！
+      </div>
+    </div>
+    <div class="s-footer">
+      <button class="btn btn-blue" style="width:100%;" onclick="submitPet()">開始故事 ✨</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       STORY
+  ══════════════════════════════════════════════ -->
+  <div id="s-story" class="screen">
+    <div class="story-panel active" id="sp-0" style="background:linear-gradient(160deg,#1a1a2e,#16213e);">
+      <div class="sp-illus">🏠</div>
+      <div class="sp-text">新的篇章就這樣開始了<br><span class="hi">一個空房間</span>，太小了……<br>可是好可愛！</div>
+      <div class="sp-dots"><div class="sp-dot active"></div><div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div></div>
+      <button class="btn btn-pink" onclick="nextStory(1)">繼續 →</button>
+    </div>
+    <div class="story-panel" id="sp-1" style="background:linear-gradient(160deg,#2d1b69,#11998e);">
+      <div class="sp-illus" id="sp1pet">🐱</div>
+      <div class="sp-text">不用擔心睡在哪裡！<br>有你的夥伴<span class="hi" id="sp1petname">小咪</span>在！<br>兩雙手一起，什麼都更容易～</div>
+      <div class="sp-dots"><div class="sp-dot"></div><div class="sp-dot active"></div><div class="sp-dot"></div><div class="sp-dot"></div></div>
+      <button class="btn btn-pink" onclick="nextStory(2)">繼續 →</button>
+    </div>
+    <div class="story-panel" id="sp-2" style="background:linear-gradient(160deg,#c94b4b,#4b134f);">
+      <div class="sp-illus">💕</div>
+      <div class="sp-text">與心中最特別的人同住<br>是人生中最令人期待的事<br><span class="hi" id="sp2partner">Ta</span>也在等你了！</div>
+      <div class="sp-dots"><div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot active"></div><div class="sp-dot"></div></div>
+      <button class="btn btn-pink" onclick="nextStory(3)">繼續 →</button>
+    </div>
+    <div class="story-panel" id="sp-3" style="background:linear-gradient(160deg,#134e5e,#71b280);">
+      <div class="sp-illus">🛋️</div>
+      <div class="sp-text">以各種家具、電器與裝飾<br>打造你的<span class="hi">夢想新家</span>！<br>選擇無窮，創意無限！</div>
+      <div class="sp-dots"><div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot active"></div></div>
+      <button class="btn btn-pink" onclick="enterHome()">進入我的小窩 🏠</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       HOME
+  ══════════════════════════════════════════════ -->
+  <div id="s-home" class="screen">
+    <div class="topbar">
+      <div class="p-info">
+        <div class="p-avatar" id="homeAv"></div>
+        <div>
+          <div class="p-name" id="homeName">玩家</div>
+          <div class="p-sub">我的小窩</div>
+        </div>
+      </div>
+      <div class="coins">🪙 <span id="coinAmt">200</span></div>
+    </div>
+
+    <div class="room-wrap">
+      <div class="room-bg">
+        <div class="r-wall"></div>
+        <div class="r-floor"></div>
+        <div class="r-line"></div>
+        <div class="r-window">🪟</div>
+
+        <!-- Furniture - fixed -->
+        <div class="furn" id="f-sofa" style="bottom:43%;left:10px;"><span class="fi">🛋️</span><span class="fl">沙發</span></div>
+        <div class="furn" id="f-tv"   style="bottom:43%;right:12px;"><span class="fi">📺</span><span class="fl">電視</span></div>
+        <div class="furn" id="f-chair"style="bottom:43%;left:50%;transform:translateX(-50%);"><span class="fi">🪑</span><span class="fl">椅子</span></div>
+        <!-- Furniture - optional -->
+        <div class="furn" id="f-plant"  style="bottom:43%;right:60px;display:none;"><span class="fi">🪴</span><span class="fl">盆栽</span></div>
+        <div class="furn" id="f-book"   style="bottom:43%;left:62px;display:none;"><span class="fi">📚</span><span class="fl">書架</span></div>
+        <div class="furn" id="f-paint"  style="top:28px;left:18px;display:none;"><span class="fi">🖼️</span><span class="fl">掛畫</span></div>
+        <div class="furn" id="f-lamp"   style="bottom:43%;left:2px;display:none;"><span class="fi">🪔</span><span class="fl">檯燈</span></div>
+        <div class="furn" id="f-fridge" style="bottom:43%;right:2px;display:none;"><span class="fi">🧊</span><span class="fl">冰箱</span></div>
+        <div class="furn" id="f-flower" style="top:28px;right:18px;display:none;"><span class="fi">🌸</span><span class="fl">鮮花</span></div>
+        <div class="furn" id="f-catree" style="bottom:43%;left:118px;display:none;"><span class="fi">🌳</span><span class="fl">貓爬架</span></div>
+        <div class="furn" id="f-rug"    style="bottom:43%;left:50%;transform:translateX(-50%);margin-left:0;display:none;"><span class="fi">🟫</span><span class="fl">地毯</span></div>
+
+        <!-- Partner -->
+        <div class="r-char partner" id="rPartner" style="bottom:16%;right:14%;" onclick="talkPartner()">
+          <svg id="rPartnerSvg" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg" style="width:72px;height:auto;"></svg>
+          <div class="ctip">點我聊天 💬</div>
+        </div>
+
+        <!-- Player -->
+        <div class="r-char player" style="bottom:16%;left:16%;">
+          <svg id="rPlayerSvg" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg" style="width:72px;height:auto;"></svg>
+        </div>
+
+        <!-- Pet -->
+        <div class="r-char pet" style="bottom:16%;left:44%;">
+          <svg id="rPetSvg" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg" style="width:58px;height:auto;"></svg>
+        </div>
+
+        <!-- Bubble -->
+        <div id="bubble"><span id="bubbleText"></span></div>
+      </div>
+    </div>
+
+    <div class="bnav">
+      <div class="bni active" id="bn-home" onclick="navTo('home')">
+        <span class="ni">🏠</span><span class="nl">我的家</span>
+      </div>
+      <div class="bni" id="bn-shop" onclick="navTo('shop')">
+        <span class="ni">🛍️</span><span class="nl">商店</span>
+      </div>
+      <div class="bni" id="bn-wd" onclick="navTo('wardrobe')">
+        <span class="ni">👗</span><span class="nl">衣櫃</span>
+      </div>
+      <div class="bni" id="bn-pet" onclick="navTo('pet')">
+        <span class="ni" id="petNavIcon">🐾</span><span class="nl">寵物</span>
+      </div>
+    </div>
+    <div id="saveInd">💾 已儲存</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SHOP
+  ══════════════════════════════════════════════ -->
+  <div id="s-shop" class="screen">
+    <div class="s-header shop">
+      <h2>🛍️ 家居商店</h2>
+      <p>用愛心佈置你的小窩</p>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px 0;">
+      <span style="font-size:12px;color:#bbb;">點擊購買</span>
+      <div class="coins">🪙 <span id="shopCoins">200</span></div>
+    </div>
+    <div class="s-body" style="padding:4px;">
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
+    <div class="s-footer">
+      <button class="btn btn-ghost" style="width:100%;" onclick="navTo('home')">← 回到家</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       WARDROBE
+  ══════════════════════════════════════════════ -->
+  <div id="s-wardrobe" class="screen">
+    <div class="s-header purple">
+      <h2>👗 我的衣櫃</h2>
+      <p>今天想穿什麼呢？</p>
+    </div>
+    <div class="s-body">
+      <div class="wd-prev">
+        <svg id="wdAvatar" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div style="font-size:13px;color:#bbb;" id="wdName">我的角色</div>
+      </div>
+      <div style="padding:0 14px 10px;"><span class="f-label">選擇服裝</span></div>
+      <div class="of-grid" id="ofGrid"></div>
+    </div>
+    <div class="s-footer">
+      <button class="btn btn-ghost" style="width:100%;" onclick="navTo('home')">← 回到家</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PET INTERACT
+  ══════════════════════════════════════════════ -->
+  <div id="s-petx" class="screen">
+    <div class="s-header blue" id="petxHeader">
+      <h2 id="petxTitle">🐾 我的寵物</h2>
+      <p>和你的毛茸茸夥伴互動</p>
+    </div>
+    <div class="pet-body">
+      <svg id="petBig" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div style="font-size:19px;font-weight:bold;color:#3a7ca5;margin-bottom:5px;" id="petxName">小咪</div>
+      <div style="font-size:12px;color:#bbb;margin-bottom:14px;" id="petxMood">心情：開心 😊</div>
+      <div id="petxSpeech" style="background:white;border:2px solid #a8d8ea;border-radius:16px;padding:12px 16px;font-size:13px;color:#5c4033;width:100%;text-align:center;line-height:1.8;margin-bottom:16px;">
+        （輕輕搖動尾巴）今天也很開心！
+      </div>
+      <div class="pet-action-grid">
+        <button class="pa-btn" style="background:linear-gradient(135deg,#a8d8ea,#7ec8e3);" onclick="petDo('feed')">🍖 餵食</button>
+        <button class="pa-btn" style="background:linear-gradient(135deg,#ff8fab,#ff6b9d);" onclick="petDo('play')">🎾 玩耍</button>
+        <button class="pa-btn" style="background:linear-gradient(135deg,#c084fc,#f472b6);" onclick="petDo('groom')">🛁 梳洗</button>
+        <button class="pa-btn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);" onclick="petDo('cuddle')">🤗 抱抱</button>
+      </div>
+    </div>
+    <div class="s-footer">
+      <button class="btn btn-ghost" style="width:100%;" onclick="navTo('home')">← 回到家</button>
+    </div>
+  </div>
+
+  <!-- Install Banner -->
+  <div id="installBanner">
+    <p>📲 把遊戲安裝到桌面！</p>
+    <button onclick="installApp()">安裝 APP</button>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ─── DATA ─────────────────────────────────────────────── */
+const SKINS    = ['#F5C5A3','#E8A87C','#C68250'];
+const HAIR_C   = ['#1C1410','#6B3D1A','#C8963C','#E8668A','#7C5CBF'];
+const OUTFITS  = [
+  {n:'休閒T恤', s:'#6BB6F4', p:'#3A7BC8', sh:'#1D4E89'},
+  {n:'可愛洋裝', s:'#FFB8D0', p:'#F472B6', sh:'#C026A6'},
+  {n:'舒適睡衣', s:'#BFB0FF', p:'#9B87FF', sh:'#6D55CC'},
+  {n:'時尚套裝', s:'#5DD6B0', p:'#0EA572', sh:'#065F44'},
+  {n:'溫暖外套', s:'#FFA878', p:'#F05030', sh:'#8B1A00'},
+  {n:'和服',     s:'#FF8FAB', p:'#E83D6A', sh:'#9C1A3A'},
+];
+const OUTFIT_ICONS = ['👕','👗','🩱','🧥','🧣','👘'];
+
+const PARTNER_PRESETS = [
+  {hair:1, hairColor:1, outfit:0}, // 溫柔型 - long dark brown
+  {hair:0, hairColor:2, outfit:3}, // 活潑型 - short golden
+  {hair:0, hairColor:0, outfit:3}, // 成熟型 - short black
+];
+
+const CAT_COLORS  = [
+  {n:'灰色',  b:'#B0B0C8', d:'#8888AA', e:'#7BC8E8', er:'#FFB7C5'},
+  {n:'橘色',  b:'#FFA060', d:'#D07030', e:'#7BC8E8', er:'#FFB7C5'},
+  {n:'白色',  b:'#FFFFFF', d:'#CCCCCC', e:'#A8DFEA', er:'#FFB7C5'},
+];
+const DOG_COLORS  = [
+  {n:'金色',  b:'#D4A056', d:'#A07030', e:'#4A2C0A'},
+  {n:'米白',  b:'#F5EDD5', d:'#C8B890', e:'#4A2C0A'},
+  {n:'棕色',  b:'#8B4513', d:'#6B2F0A', e:'#2C1810'},
+];
+
+const PARTNER_LINES = [
+  '今天也要一起加油喔！💪','要不要一起喝杯茶？🍵',
+  '你今天看起來特別可愛！💕','我已經準備好晚餐了！🍳',
+  '謝謝你一直陪著我～💖','今天天氣真好，出去走走吧？☀️',
+  '我好想吃甜點……🎂','哇，你的衣服好好看！✨',
+  '一起看電影吧！🎬','愛你喔～😊','抱抱！🤗','今天過得怎麼樣？',
+];
+const PET_LINES = {
+  cat:{
+    feed:  ['喵！好好吃！🐟','謝謝主人！','再多一點嘛～'],
+    play:  ['喵嗚！我最愛玩了！','抓到了！🐭','哈哈好開心！'],
+    groom: ['喵～好舒服……','光滑的毛毛！✨','繼續梳嘛～'],
+    cuddle:['喵嗚…（蹭蹭）','主人真溫暖！💕','嗯嗯嗯嗯嗯…'],
+  },
+  dog:{
+    feed:  ['汪！好好吃！🦴','最愛主人了！','還有還有！'],
+    play:  ['汪汪！衝！','接到了！🎾','再來一次！！'],
+    groom: ['汪～好舒服呀！','尾巴搖搖搖！','愛洗澡！'],
+    cuddle:['汪！！（撲上來）','主人最棒了！💕','汪汪汪！'],
+  },
+};
+const MOOD_LABELS=['難過 😢','普通 😐','開心 😊','非常開心 😄','超開心！🥰'];
+
+const SHOP_ITEMS = [
+  {id:'plant',  n:'可愛盆栽', e:'🪴', p:30,  fid:'f-plant'},
+  {id:'book',   n:'小書架',   e:'📚', p:50,  fid:'f-book'},
+  {id:'lamp',   n:'溫馨檯燈', e:'🪔', p:25,  fid:'f-lamp'},
+  {id:'paint',  n:'裝飾掛畫', e:'🖼️',p:40,  fid:'f-paint'},
+  {id:'flower', n:'鮮花擺飾', e:'🌸', p:20,  fid:'f-flower'},
+  {id:'fridge', n:'冰箱',     e:'🧊', p:80,  fid:'f-fridge'},
+  {id:'catree', n:'貓爬架',   e:'🌳', p:60,  fid:'f-catree'},
+  {id:'rug',    n:'溫暖地毯', e:'🟫', p:35,  fid:'f-rug'},
+];
+
+/* ─── STATE ─────────────────────────────────────────────── */
+let gs = {
+  char:    {name:'', skin:0, hair:0, hairColor:0, outfit:0},
+  partner: {name:'', type:0},
+  pet:     {type:'cat', colorScheme:0, name:'', mood:3},
+  home:    {coins:200, owned:[]},
+  dIdx:    0,
+};
+
+let sel = {skin:0, hair:0, hairColor:0, outfit:0, pType:0, pColor:0};
+
+/* ─── SVG GENERATORS ─────────────────────────────────────── */
+function charSVG({skin=0, hair=0, hairColor=0, outfit=0}={}) {
+  const sc = SKINS[skin]||SKINS[0];
+  const hc = HAIR_C[hairColor]||HAIR_C[0];
+  const oc = OUTFITS[outfit]||OUTFITS[0];
+  const hp = hairPath(hair, hc);
+  return `
+    ${hp.back}
+    <rect x="24" y="41" width="12" height="9" rx="4" fill="${sc}"/>
+    <rect x="13" y="47" width="34" height="26" rx="9" fill="${oc.s}"/>
+    <rect x="5"  y="49" width="10" height="22" rx="5" fill="${oc.s}"/>
+    <rect x="45" y="49" width="10" height="22" rx="5" fill="${oc.s}"/>
+    <circle cx="10" cy="72" r="5.5" fill="${sc}"/>
+    <circle cx="50" cy="72" r="5.5" fill="${sc}"/>
+    <rect x="16" y="70" width="12" height="20" rx="6" fill="${oc.p}"/>
+    <rect x="32" y="70" width="12" height="20" rx="6" fill="${oc.p}"/>
+    <ellipse cx="22" cy="90" rx="9" ry="5" fill="${oc.sh}"/>
+    <ellipse cx="38" cy="90" rx="9" ry="5" fill="${oc.sh}"/>
+    <circle cx="30" cy="26" r="17" fill="${sc}"/>
+    <ellipse cx="22.5" cy="23" rx="4.5" ry="5" fill="white"/>
+    <ellipse cx="37.5" cy="23" rx="4.5" ry="5" fill="white"/>
+    <circle cx="23.5" cy="24" r="3" fill="#2C1810"/>
+    <circle cx="38.5" cy="24" r="3" fill="#2C1810"/>
+    <circle cx="24.5" cy="23" r="1.2" fill="white"/>
+    <circle cx="39.5" cy="23" r="1.2" fill="white"/>
+    <path d="M18.5 17 Q22.5 15.5 26.5 17" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M33.5 17 Q37.5 15.5 41.5 17" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="17" cy="29.5" rx="5" ry="3.2" fill="#FFB7C5" opacity="0.5"/>
+    <ellipse cx="43" cy="29.5" rx="5" ry="3.2" fill="#FFB7C5" opacity="0.5"/>
+    <ellipse cx="30" cy="28" rx="2.2" ry="1.8" fill="${sc}" stroke="#d4998a" stroke-width="0.7"/>
+    <path d="M25.5 33 Q30 38 34.5 33" stroke="#E57373" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    ${hp.front}
+  `;
+}
+
+function hairPath(style, hc) {
+  if(style===1) return {
+    back:`<ellipse cx="30" cy="12" rx="17" ry="12" fill="${hc}"/>
+          <rect x="10" y="15" width="9" height="40" rx="5" fill="${hc}"/>
+          <rect x="41" y="15" width="9" height="40" rx="5" fill="${hc}"/>
+          <ellipse cx="14" cy="52" rx="6" ry="8" fill="${hc}"/>
+          <ellipse cx="46" cy="52" rx="6" ry="8" fill="${hc}"/>`,
+    front:''
+  };
+  if(style===2) return {
+    back:`<ellipse cx="30" cy="17" rx="15" ry="11" fill="${hc}"/>
+          <circle cx="30" cy="7" r="9" fill="${hc}"/>
+          <circle cx="30" cy="8" r="5" fill="${hc}" opacity=".7"/>
+          <path d="M21 7 Q30 2 39 7" stroke="${hc}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+    front:`<ellipse cx="30" cy="16" rx="15" ry="6" fill="${hc}"/>`
+  };
+  // default: short
+  return {
+    back:`<ellipse cx="30" cy="13" rx="16" ry="12" fill="${hc}"/>
+          <rect x="12" y="14" width="8" height="14" rx="5" fill="${hc}"/>
+          <rect x="40" y="14" width="8" height="14" rx="5" fill="${hc}"/>`,
+    front:''
+  };
+}
+
+function catSVG(ci=0) {
+  const c = CAT_COLORS[ci]||CAT_COLORS[0];
+  return `
+    <path d="M58 48 Q72 36 65 22 Q60 16 54 22" stroke="${c.b}" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="34" cy="50" rx="24" ry="18" fill="${c.b}"/>
+    <path d="M24 40 Q34 38 44 40" stroke="${c.d}" stroke-width="2" fill="none" opacity=".4"/>
+    <path d="M22 46 Q34 44 46 46" stroke="${c.d}" stroke-width="2" fill="none" opacity=".4"/>
+    <ellipse cx="20" cy="64" rx="8" ry="6" fill="${c.b}"/>
+    <ellipse cx="48" cy="64" rx="8" ry="6" fill="${c.b}"/>
+    <circle cx="34" cy="24" r="20" fill="${c.b}"/>
+    <polygon points="18,8 10,0 26,6" fill="${c.b}"/>
+    <polygon points="50,8 58,0 44,6" fill="${c.b}"/>
+    <polygon points="18,8 13,2 24,7" fill="${c.er}"/>
+    <polygon points="50,8 55,2 46,7" fill="${c.er}"/>
+    <ellipse cx="26" cy="21" rx="5" ry="6" fill="${c.e}"/>
+    <ellipse cx="42" cy="21" rx="5" ry="6" fill="${c.e}"/>
+    <ellipse cx="26" cy="22" rx="3" ry="4" fill="#1A1A3A"/>
+    <ellipse cx="42" cy="22" rx="3" ry="4" fill="#1A1A3A"/>
+    <circle cx="27" cy="20" r="1.5" fill="white"/>
+    <circle cx="43" cy="20" r="1.5" fill="white"/>
+    <polygon points="34,28 31,31 37,31" fill="${c.er}"/>
+    <line x1="34" y1="31" x2="34" y2="35" stroke="#888" stroke-width="1"/>
+    <path d="M27 35 Q34 38 41 35" stroke="#888" stroke-width="1.2" fill="none"/>
+    <line x1="12" y1="29" x2="28" y2="30" stroke="${c.d}" stroke-width="1"/>
+    <line x1="12" y1="33" x2="28" y2="32" stroke="${c.d}" stroke-width="1"/>
+    <line x1="56" y1="29" x2="40" y2="30" stroke="${c.d}" stroke-width="1"/>
+    <line x1="56" y1="33" x2="40" y2="32" stroke="${c.d}" stroke-width="1"/>
+    <ellipse cx="20" cy="29" rx="5" ry="3" fill="#FFB7C5" opacity=".4"/>
+    <ellipse cx="48" cy="29" rx="5" ry="3" fill="#FFB7C5" opacity=".4"/>
+  `;
+}
+
+function dogSVG(di=0) {
+  const c = DOG_COLORS[di]||DOG_COLORS[0];
+  return `
+    <path d="M57 45 Q68 32 60 20 Q56 14 52 22" stroke="${c.b}" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <ellipse cx="35" cy="50" rx="22" ry="18" fill="${c.b}"/>
+    <ellipse cx="22" cy="64" rx="8" ry="6" fill="${c.b}"/>
+    <ellipse cx="48" cy="64" rx="8" ry="6" fill="${c.b}"/>
+    <circle cx="35" cy="23" r="19" fill="${c.b}"/>
+    <ellipse cx="17" cy="26" rx="8" ry="14" fill="${c.d}" transform="rotate(-15 17 26)"/>
+    <ellipse cx="53" cy="26" rx="8" ry="14" fill="${c.d}" transform="rotate(15 53 26)"/>
+    <ellipse cx="35" cy="30" rx="10" ry="8" fill="#EDD5A5"/>
+    <ellipse cx="35" cy="24" rx="6" ry="4.5" fill="#2C1810"/>
+    <ellipse cx="36" cy="23" rx="2" ry="1.5" fill="#4A3020" opacity=".6"/>
+    <circle cx="26" cy="17" r="5.5" fill="white"/>
+    <circle cx="44" cy="17" r="5.5" fill="white"/>
+    <circle cx="27" cy="18" r="3.5" fill="${c.e}"/>
+    <circle cx="45" cy="18" r="3.5" fill="${c.e}"/>
+    <circle cx="27.5" cy="17" r="1.3" fill="white"/>
+    <circle cx="45.5" cy="17" r="1.3" fill="white"/>
+    <path d="M22 12 Q26 10 30 12" stroke="${c.d}" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M40 12 Q44 10 48 12" stroke="${c.d}" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="18" cy="26" rx="5" ry="3" fill="#FFB7C5" opacity=".4"/>
+    <ellipse cx="52" cy="26" rx="5" ry="3" fill="#FFB7C5" opacity=".4"/>
+    <path d="M27 34 Q35 40 43 34" stroke="#888" stroke-width="1.5" fill="none"/>
+  `;
+}
+
+/* ─── SAVE / LOAD ─────────────────────────────────────────── */
+const SAVE_KEY = 'cozytime_v1';
+
+function saveGame() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(gs));
+    flashSave();
+  } catch(e) { console.warn('Save failed', e); }
+}
+function loadSave() {
+  try {
+    const d = localStorage.getItem(SAVE_KEY);
+    return d ? JSON.parse(d) : null;
+  } catch(e) { return null; }
+}
+function flashSave() {
+  const el = document.getElementById('saveInd');
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+/* ─── SCREEN ─────────────────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function navTo(dest) {
+  ['home','shop','wd','pet'].forEach(d=>{
+    document.getElementById('bn-'+d)?.classList.remove('active');
+  });
+  if(dest==='home') {
+    showScreen('s-home');
+    document.getElementById('bn-home').classList.add('active');
+    refreshHome();
+  } else if(dest==='shop') {
+    buildShop();
+    showScreen('s-shop');
+    document.getElementById('bn-shop').classList.add('active');
+  } else if(dest==='wardrobe') {
+    buildWardrobe();
+    showScreen('s-wardrobe');
+    document.getElementById('bn-wd').classList.add('active');
+  } else if(dest==='pet') {
+    buildPetX();
+    showScreen('s-petx');
+    document.getElementById('bn-pet').classList.add('active');
+  }
+}
+
+/* ─── CHARACTER CREATOR ──────────────────────────────────── */
+function refreshCharPrev() {
+  document.getElementById('charPrev').innerHTML = charSVG({
+    skin:sel.skin, hair:sel.hair, hairColor:sel.hairColor, outfit:sel.outfit
+  });
+}
+function setSkin(i, el) {
+  sel.skin = i;
+  el.closest('.color-row').querySelectorAll('.cdot').forEach(d=>d.classList.remove('sel'));
+  el.classList.add('sel');
+  refreshCharPrev();
+}
+function setHair(i, el) {
+  sel.hair = i;
+  el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  refreshCharPrev();
+}
+function setHairColor(i, el) {
+  sel.hairColor = i;
+  el.closest('.color-row').querySelectorAll('.cdot').forEach(d=>d.classList.remove('sel'));
+  el.classList.add('sel');
+  refreshCharPrev();
+}
+function setOutfit(i, el) {
+  sel.outfit = i;
+  el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  refreshCharPrev();
+}
+function submitChar() {
+  const n = document.getElementById('charName').value.trim();
+  if(!n){toast('請輸入你的名字！');return;}
+  gs.char = {name:n, skin:sel.skin, hair:sel.hair, hairColor:sel.hairColor, outfit:sel.outfit};
+  showScreen('s-partner');
+  refreshPartnerPrev();
+}
+
+/* ─── PARTNER ────────────────────────────────────────────── */
+function refreshPartnerPrev() {
+  const pr = PARTNER_PRESETS[sel.pType];
+  document.getElementById('partnerPrev').innerHTML = charSVG(pr);
+}
+function setPartner(i, el) {
+  sel.pType = i;
+  el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  refreshPartnerPrev();
+}
+function submitPartner() {
+  const n = document.getElementById('partnerName').value.trim();
+  if(!n){toast('請給伴侶起個名字！');return;}
+  gs.partner = {name:n, type:sel.pType};
+  showScreen('s-pet');
+  buildPetColors();
+  refreshPetPrev();
+}
+
+/* ─── PET ────────────────────────────────────────────────── */
+function buildPetColors() {
+  const row = document.getElementById('petColorRow');
+  const colors = gs.pet.type==='cat' ? CAT_COLORS : DOG_COLORS;
+  row.innerHTML = colors.map((c,i)=>`
+    <div class="cdot${i===sel.pColor?' sel':''}"
+         style="background:${c.b};border:3px solid ${i===sel.pColor?'#ff6b9d':'transparent'};"
+         onclick="setPetColor(${i},this)" title="${c.n}"></div>
+  `).join('');
+}
+function setPetType(type, el) {
+  gs.pet.type = type;
+  sel.pColor = 0;
+  document.getElementById('petTypeCat').classList.toggle('sel', type==='cat');
+  document.getElementById('petTypeDog').classList.toggle('sel', type==='dog');
+  buildPetColors();
+  refreshPetPrev();
+}
+function setPetColor(i, el) {
+  sel.pColor = i;
+  el.closest('#petColorRow').querySelectorAll('.cdot').forEach((d,idx)=>{
+    d.classList.toggle('sel', idx===i);
+    d.style.borderColor = idx===i ? '#ff6b9d' : 'transparent';
+  });
+  refreshPetPrev();
+}
+function refreshPetPrev() {
+  const svg = document.getElementById('petPrev');
+  svg.innerHTML = gs.pet.type==='cat' ? catSVG(sel.pColor) : dogSVG(sel.pColor);
+}
+function submitPet() {
+  const n = document.getElementById('petName').value.trim();
+  if(!n){toast('請幫你的寵物起個名字！');return;}
+  gs.pet = {type:gs.pet.type, colorScheme:sel.pColor, name:n, mood:3};
+  document.getElementById('sp1pet').textContent    = gs.pet.type==='cat'?'🐱':'🐶';
+  document.getElementById('sp1petname').textContent = n;
+  document.getElementById('sp2partner').textContent = gs.partner.name;
+  showScreen('s-story');
+}
+
+/* ─── STORY ──────────────────────────────────────────────── */
+function nextStory(i) {
+  document.querySelectorAll('.story-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp-'+i).classList.add('active');
+}
+function enterHome() {
+  gs.home.coins = 200;
+  saveGame();
+  refreshHome();
+  showScreen('s-home');
+  document.getElementById('bn-home').classList.add('active');
+}
+
+/* ─── HOME ───────────────────────────────────────────────── */
+function refreshHome() {
+  // Avatar topbar
+  document.getElementById('homeAv').innerHTML =
+    `<svg viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:auto;">${charSVG(gs.char)}</svg>`;
+  document.getElementById('homeName').textContent = gs.char.name;
+  document.getElementById('coinAmt').textContent  = gs.home.coins;
+  // Room player
+  document.getElementById('rPlayerSvg').innerHTML  = charSVG(gs.char);
+  // Room partner
+  const pp = PARTNER_PRESETS[gs.partner.type];
+  document.getElementById('rPartnerSvg').innerHTML = charSVG(pp);
+  // Room pet
+  document.getElementById('rPetSvg').innerHTML =
+    gs.pet.type==='cat' ? catSVG(gs.pet.colorScheme) : dogSVG(gs.pet.colorScheme);
+  document.getElementById('petNavIcon').textContent = gs.pet.type==='cat'?'🐱':'🐶';
+  // Furniture
+  gs.home.owned.forEach(id=>{
+    const item = SHOP_ITEMS.find(x=>x.id===id);
+    if(item?.fid) { const el=document.getElementById(item.fid); if(el) el.style.display='block'; }
+  });
+}
+
+let bubTimer = null;
+function talkPartner() {
+  const lines = PARTNER_LINES;
+  const text  = gs.partner.name + '：' + lines[gs.dIdx % lines.length];
+  gs.dIdx++;
+  document.getElementById('bubbleText').textContent = text;
+  const b = document.getElementById('bubble');
+  b.style.display = 'block';
+  spawnHeart();
+  gs.home.coins += 3;
+  document.getElementById('coinAmt').textContent = gs.home.coins;
+  if(bubTimer) clearTimeout(bubTimer);
+  bubTimer = setTimeout(()=>{ b.style.display='none'; },3500);
+  saveGame();
+}
+
+function spawnHeart() {
+  const ref  = document.getElementById('rPartner');
+  const grect= document.getElementById('game').getBoundingClientRect();
+  const rrect= ref.getBoundingClientRect();
+  const h    = document.createElement('div');
+  h.className= 'heart';
+  h.textContent='💕';
+  h.style.left=(rrect.left-grect.left+rrect.width/2-10)+'px';
+  h.style.top =(rrect.top -grect.top -20)+'px';
+  document.getElementById('game').appendChild(h);
+  setTimeout(()=>h.remove(),900);
+}
+
+/* ─── SHOP ───────────────────────────────────────────────── */
+function buildShop() {
+  document.getElementById('shopCoins').textContent = gs.home.coins;
+  const grid = document.getElementById('shopGrid');
+  grid.innerHTML = '';
+  SHOP_ITEMS.forEach(item=>{
+    const owned = gs.home.owned.includes(item.id);
+    const d = document.createElement('div');
+    d.className = 'sh-item' + (owned?' owned':'');
+    d.innerHTML = `<div class="si">${item.e}</div><div class="sn">${item.n}</div>
+                   <div class="sp">${owned?'✅ 已擁有':'🪙 '+item.p}</div>`;
+    if(!owned) d.onclick = ()=>buyItem(item);
+    grid.appendChild(d);
+  });
+}
+function buyItem(item) {
+  if(gs.home.coins < item.p){toast('🪙 硬幣不足！');return;}
+  gs.home.coins -= item.p;
+  gs.home.owned.push(item.id);
+  toast('✅ 購買了 '+item.n+'！');
+  buildShop();
+  refreshHome();
+  saveGame();
+}
+
+/* ─── WARDROBE ───────────────────────────────────────────── */
+function buildWardrobe() {
+  document.getElementById('wdAvatar').innerHTML = charSVG(gs.char);
+  document.getElementById('wdName').textContent  = gs.char.name;
+  const grid = document.getElementById('ofGrid');
+  grid.innerHTML = '';
+  OUTFITS.forEach((o,i)=>{
+    const d = document.createElement('div');
+    d.className = 'of-item' + (i===gs.char.outfit?' sel':'');
+    d.innerHTML = `<span class="oi">${OUTFIT_ICONS[i]}</span><span class="ol">${o.n}</span>`;
+    d.onclick = ()=>changeOutfit(i);
+    grid.appendChild(d);
+  });
+}
+function changeOutfit(i) {
+  gs.char.outfit = i;
+  toast('已換上 '+OUTFITS[i].n+' '+OUTFIT_ICONS[i]);
+  buildWardrobe();
+  refreshHome();
+  saveGame();
+}
+
+/* ─── PET INTERACT ───────────────────────────────────────── */
+function buildPetX() {
+  const isCat = gs.pet.type==='cat';
+  document.getElementById('petxTitle').textContent = (isCat?'🐱':'🐶')+' 我的寵物';
+  document.getElementById('petxName').textContent   = gs.pet.name;
+  document.getElementById('petxMood').textContent   = '心情：'+MOOD_LABELS[Math.min(gs.pet.mood,4)];
+  document.getElementById('petBig').innerHTML = isCat ? catSVG(gs.pet.colorScheme) : dogSVG(gs.pet.colorScheme);
+  document.getElementById('petxSpeech').textContent = '（輕輕搖動尾巴）今天也很開心！';
+}
+function petDo(act) {
+  const isCat = gs.pet.type==='cat';
+  const lines  = isCat ? PET_LINES.cat[act] : PET_LINES.dog[act];
+  const text   = lines[Math.floor(Math.random()*lines.length)];
+  gs.pet.mood  = Math.min(4, gs.pet.mood+1);
+  gs.home.coins += 5;
+  document.getElementById('petxSpeech').textContent = text;
+  document.getElementById('petxMood').textContent   = '心情：'+MOOD_LABELS[Math.min(gs.pet.mood,4)];
+  toast('+5 🪙 愛護寵物獎勵');
+  saveGame();
+}
+
+/* ─── TITLE (start / continue) ─────────────────────────── */
+function startNew() {
+  gs = {
+    char:    {name:'', skin:0, hair:0, hairColor:0, outfit:0},
+    partner: {name:'', type:0},
+    pet:     {type:'cat', colorScheme:0, name:'', mood:3},
+    home:    {coins:200, owned:[]},
+    dIdx:    0,
+  };
+  sel = {skin:0, hair:0, hairColor:0, outfit:0, pType:0, pColor:0};
+  // reset UI
+  document.getElementById('charName').value    = '';
+  document.getElementById('partnerName').value = '';
+  document.getElementById('petName').value     = '';
+  refreshCharPrev();
+  showScreen('s-char');
+}
+function loadGame() {
+  const d = loadSave();
+  if(!d){toast('找不到存檔！');return;}
+  gs = d;
+  refreshHome();
+  showScreen('s-home');
+  document.getElementById('bn-home').classList.add('active');
+  toast('✅ 讀取存檔成功！');
+}
+
+/* ─── TOAST ─────────────────────────────────────────────── */
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ─── STARS ─────────────────────────────────────────────── */
+(function(){
+  const c = document.getElementById('starsContainer');
+  for(let i=0;i<35;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    s.style.left=Math.random()*100+'%';
+    s.style.top =Math.random()*100+'%';
+    s.style.animationDelay=Math.random()*2+'s';
+    s.style.animationDuration=(1.5+Math.random()*2)+'s';
+    c.appendChild(s);
+  }
+})();
+
+/* ─── INIT ───────────────────────────────────────────────── */
+(function init(){
+  refreshCharPrev();
+  refreshPartnerPrev();
+  buildPetColors();
+  refreshPetPrev();
+
+  // Check for saved game
+  const saved = loadSave();
+  if(saved) document.getElementById('btnContinue').style.display='block';
+})();
+
+/* ─── PWA INSTALL ─────────────────────────────────────────── */
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').style.display='flex';
+});
+function installApp() {
+  if(!deferredInstall) return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(r=>{
+    document.getElementById('installBanner').style.display='none';
+    deferredInstall = null;
+  });
+}
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBanner').style.display='none';
+});
+</script>
+</body>
+</html>
