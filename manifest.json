@@ -1,0 +1,27 @@
+{
+  "name": "我的小窩時光",
+  "short_name": "小窩時光",
+  "description": "一場屬於你的口袋冒險，體驗生活、愛情與自己專屬的可愛家居",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff9f7",
+  "theme_color": "#ff8fab",
+  "lang": "zh-TW",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["games", "entertainment"]
+}
